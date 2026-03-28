@@ -16,7 +16,7 @@ router = APIRouter(
 def notify_doctor(doctor_id: int, patient_name: str):
     import time
     time.sleep(2)  
-    print(f"✉️ Notification sent to doctor {doctor_id} — new patient: {patient_name}")
+    print(f"Notification sent to doctor {doctor_id} — new patient: {patient_name}")
 
 # ── Dependency — get record or 404 ────────
 def get_record_or_404(
