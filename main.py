@@ -49,3 +49,8 @@ app.add_middleware(
 app.include_router(records_router)
 app.include_router(auth_router)
 app.include_router(doctors_router)
+
+
+@app.get("/", tags=["Health"])
+async def root():
+    return {"api": "Medical Records API", "version": "1.0.0", "status": "running"}

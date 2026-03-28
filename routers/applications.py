@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status, Path, Header
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Path, Header, BackgroundTasks
 from fastapi.encoders import jsonable_encoder
 from typing import Annotated
 from sqlalchemy.orm import Session
@@ -11,6 +11,12 @@ router = APIRouter(
     prefix="/records",
     tags=["Medical Records"],
 )
+
+# ── Background task function ──────────────
+def notify_doctor(doctor_id: int, patient_name: str):
+    import time
+    time.sleep(2)  
+    print(f"✉️ Notification sent to doctor {doctor_id} — new patient: {patient_name}")
 
 # ── Dependency — get record or 404 ────────
 def get_record_or_404(
@@ -26,7 +32,6 @@ def get_record_or_404(
     return record
 
 
-# ── POST /records/ ────────────────────────
 @router.post(
     "/",
     status_code=status.HTTP_201_CREATED,
@@ -36,20 +41,23 @@ def get_record_or_404(
 async def create_record(
     _: Annotated[dict, Depends(get_current_user)],
     record: MedicalRecord,
-    db: Annotated[Session, Depends(get_db)]
+    db: Annotated[Session, Depends(get_db)],
+    background_tasks: BackgroundTasks      
 ):
-    # convert Pydantic model to dict
     data = jsonable_encoder(record)
-
-    # create SQLAlchemy model from dict
     db_record = MedicalRecordDB(**data)
-
-    # store in PostgreSQL
     db.add(db_record)
     db.commit()
-    db.refresh(db_record)  # get updated data back (id, created_at etc)
-    return db_record
+    db.refresh(db_record)
 
+    
+    background_tasks.add_task(
+        notify_doctor,
+        doctor_id=record.doctor_id,
+        patient_name=record.patient_name
+    )
+
+    return db_record
 
 # ── GET /records/ ─────────────────────────
 @router.get(

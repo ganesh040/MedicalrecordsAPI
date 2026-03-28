@@ -25,16 +25,16 @@ class RecordFilter(BaseModel):
 
     
 class MedicalRecord(BaseModel):
-    patient_name : str = Field(min_length=2, max_length=100, example="John Doe")
-    age : int = Field(ge=0, le=120, example=30)
-    blood_type : Bloodtype = Field(example="A+")
-    diagnosis : str = Field(min_length=5, max_length=500, example="Hypertension")
-    doctor_id: int = Field(gt=0, example=1)
-    email: EmailStr = Field(example="john.doe@example.com")
-    phone :str = Field(pattern=r'^\+?1?\d{9,15}$', example="+1234567890")
+    patient_name : str = Field(min_length=2, max_length=100, json_schema_extra={"example": "John Doe"})
+    age : int = Field(ge=0, le=120, json_schema_extra={"example": 30})
+    blood_type : Bloodtype = Field(json_schema_extra={"example": "A+"})
+    diagnosis : str = Field(min_length=5, max_length=500, json_schema_extra={"example": "Hypertension"})
+    doctor_id: int = Field(gt=0, json_schema_extra={"example": 1})
+    email: EmailStr = Field(json_schema_extra={"example": "john.doe@example.com"})
+    phone :str = Field(pattern=r'^\+?1?\d{9,15}$', json_schema_extra={"example": "+1234567890"})
     admitted_at : datetime 
     is_admitted : bool = Field(default=False)
-    notes : str | None = Field(max_length=1000, example="Patient is responding well to treatment.")
+    notes : str | None = Field(max_length=1000, json_schema_extra={"example": "Patient is responding well to treatment."})
     weight : float = Field(gt=0)
     height : float = Field(gt=0)
     
