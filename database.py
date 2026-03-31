@@ -2,15 +2,13 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import declarative_base
+from config import get_settings
 
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://postgres:postgres123@localhost:5432/medical_records"
-)
+settings=get_settings()
 
 engine = create_engine(
-    DATABASE_URL,
+    settings.database_url,
     pool_size=5,        # keep 5 connections open always
     max_overflow=10,    # allow 10 extra in traffic spikes
     pool_timeout=30,    # wait max 30 seconds for a connection
