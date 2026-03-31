@@ -2,23 +2,29 @@ import pytest
 from fastapi.testclient import TestClient
 from main import app
 
+import uuid
+from fastapi.testclient import TestClient
+from main import app
+
 # ── Test client ───────────────────────────
 client = TestClient(app)
 
+
 def create_test_doctor():
+    unique_email = f"dr.test.{uuid.uuid4()}@hospital.com"
     response = client.post(
         "/doctors/",
         headers=auth_headers(),
         json={
             "name": "Dr. Test",
-            "email": "dr.test@hospital.com",
+            "email": unique_email,
             "specialization": "General",
             "phone": "+14155551234"
         }
     )
     return response.json()["id"]
 
-# ── Helper — login and get token ──────────
+
 def get_token():
     response = client.post("/token", data={
         "username": "john",
@@ -26,17 +32,31 @@ def get_token():
     })
     return response.json()["access_token"]
 
-# ── Helper — auth headers ─────────────────
+
 def auth_headers():
     return {"Authorization": f"Bearer {get_token()}"}
 
 
+def dummy_record(doctor_id: int = 1):
+    return {
+        "patient_name": "Test Patient",
+        "age": 25,
+        "blood_type": "A+",
+        "diagnosis": "Test diagnosis here",
+        "doctor_id": doctor_id,
+        "email": "test@example.com",
+        "phone": "+14155551234",
+        "admitted_at": "2024-01-15T09:00:00",
+        "is_admitted": True,
+        "notes": "Test notes",
+        "weight": 70.0,
+        "height": 170.0
+    }
 
 
 def test_root():
     response = client.get("/")
     assert response.status_code == 200
-
 
 
 def test_login_success():
@@ -74,8 +94,8 @@ def test_get_me():
 def test_get_me_no_token():
     response = client.get("/me")
     assert response.status_code == 401
-    
-    
+
+
 def test_get_records_unauthorized():
     response = client.get("/records/")
     assert response.status_code == 401
@@ -95,32 +115,17 @@ def test_get_record_not_found():
 
 def test_get_record_invalid_id():
     response = client.get("/records/0", headers=auth_headers())
-    assert response.status_code == 422  # validation error — id must be >= 1
+    assert response.status_code == 422
 
 
 def test_create_record_missing_fields():
     response = client.post(
         "/records/",
         headers=auth_headers(),
-        json={"patient_name": "John"}  # missing required fields
+        json={"patient_name": "John"}
     )
     assert response.status_code == 422
-    
-def dummy_record(doctor_id: int = 1):
-    return {
-        "patient_name": "Test Patient",
-        "age": 25,
-        "blood_type": "A+",
-        "diagnosis": "Test diagnosis here",
-        "doctor_id": doctor_id,
-        "email": "test@example.com",
-        "phone": "+14155551234",
-        "admitted_at": "2024-01-15T09:00:00",
-        "is_admitted": True,
-        "notes": "Test notes",
-        "weight": 70.0,
-        "height": 170.0
-    }
+
 
 def test_create_record_success():
     doctor_id = create_test_doctor()
@@ -132,6 +137,30 @@ def test_create_record_success():
     assert response.status_code == 201
     assert response.json()["patient_name"] == "Test Patient"
     assert "id" in response.json()
+
+
+def test_create_record_invalid_age():
+    doctor_id = create_test_doctor()
+    data = dummy_record(doctor_id)
+    data["age"] = 200
+    response = client.post(
+        "/records/",
+        headers=auth_headers(),
+        json=data
+    )
+    assert response.status_code == 422
+
+
+def test_create_record_invalid_blood_type():
+    doctor_id = create_test_doctor()
+    data = dummy_record(doctor_id)
+    data["blood_type"] = "Z+"
+    response = client.post(
+        "/records/",
+        headers=auth_headers(),
+        json=data
+    )
+    assert response.status_code == 422
 
 
 def test_get_record_success():
@@ -178,6 +207,7 @@ def test_delete_record_success():
     assert response.status_code == 204
     response = client.get(f"/records/{record_id}", headers=auth_headers())
     assert response.status_code == 404
+
 
 def test_delete_record_not_found():
     response = client.delete(
